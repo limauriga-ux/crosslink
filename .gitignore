@@ -1,0 +1,74 @@
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Local configuration and runtime state
+config.json
+.crosslink.json
+.env
+.env.*
+!.env.example
+*.log
+*.pid
+*.sock
+corplink_session.json
+gui_state.json
+proxy.json
+proxy-state.json
+
+# Go build and test artifacts
+/crosslink
+/crosslink-daemon
+/crosslink_*
+/crosslink-gui
+*.exe
+*.test
+*.out
+coverage.out
+coverage.html
+/bin/
+/build/
+/dist/
+/.gocache/
+/.gomodcache/
+/.tools/
+
+# Wails generated artifacts
+cmd/gui/assets/
+cmd/gui/daemon/
+cmd/gui/daemon_sha.go
+frontend/src/bindings/
+
+# Frontend dependencies and build output
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Packaged installers and archives
+*.dmg
+*.pkg
+*.msi
+*.deb
+*.rpm
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# Local helper scripts / generated platform launchers
+*.bat
+*.ps1
+
+
+# Reference checkout kept outside this repository
+/ecorplink-prod/

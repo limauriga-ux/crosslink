@@ -1,0 +1,154 @@
+version: '3'
+
+vars:
+  APP_NAME: crosslink-gui
+  BIN_DIR: bin
+  WAILS: '{{.WAILS | default "wails3"}}'
+  VERSION: '{{.VERSION | default "dev"}}'
+  SINGBOX_TAGS: 'with_gvisor,with_quic,with_wireguard,with_openvpn,with_utls,badlinkname,tfogo_checklinkname0'
+  SINGBOX_LDFLAGS: '-checklinkname=0'
+
+tasks:
+  bindings:
+    summary: Generate Wails TypeScript bindings
+    deps:
+      - task: daemon:build
+        vars:
+          GOOS: '{{.GOOS | default OS}}'
+          ARCH: '{{.ARCH | default ARCH}}'
+    cmds:
+      - '{{.WAILS}} generate bindings -ts -i -d frontend/src/bindings ./cmd/gui'
+
+  frontend:install:
+    summary: Install frontend dependencies
+    dir: frontend
+    cmds:
+      - npm install
+
+  frontend:build:
+    summary: Build Vue frontend into cmd/gui/assets
+    deps:
+      - task: bindings
+    dir: frontend
+    cmds:
+      - npm run build
+
+  daemon:build:
+    summary: Build embedded CrossLink daemon helper
+    cmds:
+      - ./scripts/check_release_channel.sh "{{.VERSION}}"
+      - mkdir -p cmd/gui/daemon
+      - go build -trimpath -tags "{{.SINGBOX_TAGS}}" -ldflags "{{.SINGBOX_LDFLAGS}} -s -w -X main.Version={{.VERSION}}" -o cmd/gui/daemon/crosslink-daemon ./cmd/crosslink-daemon
+      - |
+        if command -v sha256sum >/dev/null 2>&1; then
+          DAEMON_SHA="$(sha256sum cmd/gui/daemon/crosslink-daemon | awk '{print $1}')"
+        elif command -v shasum >/dev/null 2>&1; then
+          DAEMON_SHA="$(shasum -a 256 cmd/gui/daemon/crosslink-daemon | awk '{print $1}')"
+        elif command -v certutil >/dev/null 2>&1; then
+          DAEMON_SHA="$(certutil -hashfile cmd/gui/daemon/crosslink-daemon SHA256 | awk 'NR == 2 { gsub(/[[:space:]]/, ""); print tolower($0) }')"
+        else
+          echo "sha256sum, shasum, or certutil is required" >&2
+          exit 1
+        fi
+        cat > cmd/gui/daemon_sha.go <<EOF
+        package main
+
+        const embeddedDaemonSHA256 = "$DAEMON_SHA"
+        EOF
+    env:
+      GOOS: '{{.GOOS | default OS}}'
+      GOARCH: '{{.ARCH | default ARCH}}'
+
+  daemon:linux:
+    summary: Cross-compile the daemon helper for Linux amd64
+    cmds:
+      - ./scripts/check_release_channel.sh "{{.VERSION}}"
+      - mkdir -p {{.BIN_DIR}}
+      - GOOS=linux GOARCH=amd64 go build -trimpath -tags "{{.SINGBOX_TAGS}}" -ldflags "{{.SINGBOX_LDFLAGS}} -s -w -X main.Version={{.VERSION}}" -o {{.BIN_DIR}}/crosslink-daemon-linux-amd64 ./cmd/crosslink-daemon
+
+  daemon:windows:
+    summary: Cross-compile the daemon helper for Windows amd64/x86/arm64/arm
+    cmds:
+      - ./scripts/check_release_channel.sh "{{.VERSION}}"
+      - mkdir -p {{.BIN_DIR}}
+      - GOOS=windows GOARCH=amd64 go build -trimpath -tags "{{.SINGBOX_TAGS}}" -ldflags "{{.SINGBOX_LDFLAGS}} -s -w -X main.Version={{.VERSION}}" -o {{.BIN_DIR}}/crosslink-daemon-windows-amd64.exe ./cmd/crosslink-daemon
+      - GOOS=windows GOARCH=386 go build -trimpath -tags "{{.SINGBOX_TAGS}}" -ldflags "{{.SINGBOX_LDFLAGS}} -s -w -X main.Version={{.VERSION}}" -o {{.BIN_DIR}}/crosslink-daemon-windows-x86.exe ./cmd/crosslink-daemon
+      - GOOS=windows GOARCH=arm64 go build -trimpath -tags "{{.SINGBOX_TAGS}}" -ldflags "{{.SINGBOX_LDFLAGS}} -s -w -X main.Version={{.VERSION}}" -o {{.BIN_DIR}}/crosslink-daemon-windows-arm64.exe ./cmd/crosslink-daemon
+      - GOOS=windows GOARCH=arm go build -trimpath -tags "{{.SINGBOX_TAGS}}" -ldflags "{{.SINGBOX_LDFLAGS}} -s -w -X main.Version={{.VERSION}}" -o {{.BIN_DIR}}/crosslink-daemon-windows-arm.exe ./cmd/crosslink-daemon
+
+  build:
+    summary: Build the GUI binary
+    deps:
+      - task: frontend:build
+        vars:
+          GOOS: '{{.GOOS | default OS}}'
+          ARCH: '{{.ARCH | default ARCH}}'
+    cmds:
+      - mkdir -p {{.BIN_DIR}}
+      - go build -trimpath -tags "{{.SINGBOX_TAGS}}" -ldflags "{{.SINGBOX_LDFLAGS}} -s -w -X main.Version={{.VERSION}}" -o {{.BIN_DIR}}/{{.APP_NAME}} ./cmd/gui
+    env:
+      GOOS: '{{.GOOS | default OS}}'
+      GOARCH: '{{.ARCH | default ARCH}}'
+
+  darwin:build:
+    summary: Build the GUI binary on macOS
+    deps:
+      - task: frontend:build
+        vars:
+          GOOS: darwin
+          ARCH: '{{.ARCH | default ARCH}}'
+    cmds:
+      - mkdir -p {{.BIN_DIR}}
+      - go build -trimpath -tags "{{.SINGBOX_TAGS}}" -ldflags "{{.SINGBOX_LDFLAGS}} -s -w -X main.Version={{.VERSION}}" -o {{.BIN_DIR}}/{{.APP_NAME}} ./cmd/gui
+    env:
+      GOOS: darwin
+      GOARCH: '{{.ARCH | default ARCH}}'
+      CGO_ENABLED: 1
+      CGO_CFLAGS: "-mmacosx-version-min=12.0"
+      CGO_LDFLAGS: "-mmacosx-version-min=12.0"
+      MACOSX_DEPLOYMENT_TARGET: "12.0"
+
+  dmg:
+    summary: Build macOS DMG package
+    cmds:
+      - ./scripts/build_wails.sh
+
+  linux:build:
+    summary: Build the GUI binary on Linux
+    deps:
+      - task: frontend:build
+        vars:
+          GOOS: linux
+          ARCH: '{{.ARCH | default ARCH}}'
+    cmds:
+      - mkdir -p {{.BIN_DIR}}
+      - go build -trimpath -tags "{{.SINGBOX_TAGS}}" -ldflags "{{.SINGBOX_LDFLAGS}} -s -w -X main.Version={{.VERSION}}" -o {{.BIN_DIR}}/{{.APP_NAME}} ./cmd/gui
+    env:
+      GOOS: linux
+      GOARCH: '{{.ARCH | default ARCH}}'
+
+  windows:build:
+    summary: Build the GUI binary on Windows
+    deps:
+      - task: frontend:build
+        vars:
+          GOOS: windows
+          ARCH: '{{.ARCH | default ARCH}}'
+    cmds:
+      - mkdir -p {{.BIN_DIR}}
+      - go build -trimpath -tags "{{.SINGBOX_TAGS}}" -ldflags "{{.SINGBOX_LDFLAGS}} -s -w -X main.Version={{.VERSION}}" -o {{.BIN_DIR}}/{{.APP_NAME}}.exe ./cmd/gui
+    env:
+      GOOS: windows
+      GOARCH: '{{.ARCH | default ARCH}}'
+
+  run:
+    summary: Build and run the GUI binary
+    deps: [build]
+    cmds:
+      - ./{{.BIN_DIR}}/{{.APP_NAME}}
+
+  dev:
+    summary: Run frontend dev server and Wails dev mode
+    cmds:
+      - '{{.WAILS}} generate bindings -ts -i -d frontend/src/bindings ./cmd/gui'
+      - npm --prefix frontend run dev

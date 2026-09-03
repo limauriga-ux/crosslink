@@ -1,0 +1,27 @@
+{
+  "name": "crosslink-gui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@lucide/vue": "^1.17.0",
+    "@types/qrcode": "^1.5.6",
+    "@vitejs/plugin-vue": "latest",
+    "@wailsio/runtime": "^3.0.0-alpha.79",
+    "naive-ui": "latest",
+    "pinia": "latest",
+    "qrcode": "^1.5.4",
+    "vite": "latest",
+    "vue": "latest",
+    "vue-draggable-plus": "latest"
+  },
+  "devDependencies": {
+    "typescript": "latest",
+    "vue-tsc": "latest"
+  }
+}

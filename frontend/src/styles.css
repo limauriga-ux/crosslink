@@ -1,0 +1,410 @@
+/* ── Design tokens ────────────────────────────────────────────────────────── */
+:root {
+  /* Brand — shifted from indigo to a Clash-Verge-like clear blue. */
+  --ec-primary: #2f6fed;
+  --ec-primary-hover: #4b87f1;
+  --ec-primary-pressed: #235ed6;
+  --ec-primary-soft: #e8f0fe;
+
+  /* Status */
+  --ec-success: #18a058;
+  --ec-success-soft: #eefaf3;
+  --ec-warning: #e6a23c;
+  --ec-warning-soft: #fdf6ec;
+  --ec-danger: #d03050;
+  --ec-danger-soft: #fdeef1;
+
+  /* Text */
+  --ec-text-1: #20242c;
+  --ec-text-2: #5f6878;
+  --ec-text-3: #8b95a7;
+
+  /* Surfaces */
+  --ec-bg: #f5f7fb;
+  --ec-bg-soft: #f0f2f8;
+  --ec-panel: #ffffff;
+  --ec-border: #e7ebf2;
+  --ec-border-soft: #edf0f5;
+
+  /* Shape & elevation — rounder cards, softer and wider shadows. */
+  --ec-radius: 12px;
+  --ec-radius-sm: 8px;
+  --ec-shadow-sm: 0 1px 3px rgba(16, 24, 40, 0.06);
+  --ec-shadow-md: 0 6px 20px rgba(16, 24, 40, 0.08);
+
+  /* Off-state surface (power button / ring). Grouped with the tokens so a
+     future dark theme only swaps this variable block. */
+  --ec-inactive: #d0d5e8;
+
+  color: var(--ec-text-1);
+  background: var(--ec-bg);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+}
+
+/* ── Page layout primitives ───────────────────────────────────────────────── */
+.page-stack {
+  display: grid;
+  gap: 16px;
+  padding: 24px 28px;
+}
+
+/* Unified page header: title + subtitle left, actions right. */
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.page-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ec-text-1);
+}
+
+.page-header .page-subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--ec-text-3);
+}
+
+.page-header .page-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Legacy toolbar (search/filter rows) — kept for rule manager etc. */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.toolbar h2 {
+  margin: 0 auto 0 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.toolbar .n-input {
+  min-width: 0;
+  flex: 1 1 180px;
+}
+
+.toolbar .n-select {
+  min-width: 0;
+  flex: 0 1 150px;
+}
+
+/* ── Panels & forms ───────────────────────────────────────────────────────── */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.panel {
+  min-width: 0;
+  border: 1px solid var(--ec-border);
+  border-radius: var(--ec-radius);
+  background: var(--ec-panel);
+  padding: 16px;
+  box-shadow: var(--ec-shadow-sm);
+  overflow-x: auto;
+}
+
+.panel h3 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ec-text-1);
+}
+
+.n-form-item {
+  margin-bottom: 14px;
+}
+
+.n-form-item:last-child {
+  margin-bottom: 0;
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 14px;
+  margin-top: 14px;
+  align-items: flex-start;
+}
+
+.kv:first-of-type {
+  margin-top: 0;
+}
+
+.kv span {
+  display: block;
+  color: var(--ec-text-3);
+  font-size: 13px;
+}
+
+.kv strong {
+  display: block;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ec-text-1);
+}
+
+/* ── Actions & feedback ───────────────────────────────────────────────────── */
+.button-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.service-actions {
+  margin-top: 16px;
+}
+
+.muted {
+  color: var(--ec-text-3);
+}
+
+.service-result {
+  margin: 14px 0 0;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.command-details {
+  margin-top: 10px;
+  color: var(--ec-text-2);
+  font-size: 13px;
+}
+
+.command-details summary {
+  cursor: pointer;
+  user-select: none;
+}
+
+.command-details pre {
+  margin: 8px 0 0;
+  padding: 10px;
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid var(--ec-border-soft);
+  border-radius: var(--ec-radius-sm);
+  background: var(--ec-bg);
+  color: var(--ec-text-1);
+  white-space: pre-wrap;
+}
+
+/* ── Rule manager ─────────────────────────────────────────────────────────── */
+.rule-list {
+  display: grid;
+  gap: 8px;
+}
+
+.rule-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid var(--ec-border-soft);
+  border-radius: var(--ec-radius-sm);
+  background: var(--ec-panel);
+  padding: 10px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.rule-row:hover {
+  border-color: var(--ec-border);
+  box-shadow: var(--ec-shadow-sm);
+}
+
+.rule-row.draft {
+  border-color: var(--ec-warning);
+  background: var(--ec-warning-soft);
+}
+
+.rule-save-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: -8px;
+  color: var(--ec-text-3);
+  font-size: 13px;
+}
+
+.rule-main {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rule-main strong,
+.rule-main span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rule-main strong {
+  color: var(--ec-text-1);
+}
+
+.rule-main span {
+  color: var(--ec-text-3);
+}
+
+.drag-handle {
+  color: var(--ec-text-3);
+  cursor: grab;
+}
+
+.drag-handle.disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.list-editor {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.rule-editor-modal {
+  width: min(460px, calc(100vw - 28px));
+}
+
+.rule-editor-body {
+  max-height: min(560px, calc(100vh - 180px));
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.rule-editor-form {
+  min-width: 0;
+}
+
+.editor-error {
+  margin-bottom: 12px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ── Tables ───────────────────────────────────────────────────────────────── */
+.data-table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  color: var(--ec-text-3);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.data-table th,
+.data-table td {
+  border-bottom: 1px solid var(--ec-border-soft);
+  padding: 12px;
+  text-align: left;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 960px) {
+  .page-stack {
+    padding: 18px 16px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .panel {
+    padding: 12px;
+  }
+
+  .kv {
+    grid-template-columns: 80px minmax(0, 1fr);
+    gap: 10px;
+  }
+}
+
+@media (max-width: 620px) {
+  .toolbar {
+    gap: 8px;
+  }
+
+  .toolbar h2 {
+    flex: 1 0 100%;
+    font-size: 18px;
+  }
+
+  .rule-row {
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .drag-handle {
+    display: none;
+  }
+
+  .kv {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 9px;
+  }
+
+  .rule-editor-modal {
+    width: calc(100vw - 20px);
+  }
+
+  .rule-editor-body {
+    max-height: calc(100vh - 150px);
+  }
+}

@@ -237,7 +237,7 @@ func TestLoadDaemonConfigBindsManagedRootAndOwner(t *testing.T) {
 		t.Fatal(err)
 	}
 	configPath := filepath.Join(dataDir, "config.json")
-	if err := os.WriteFile(configPath, []byte("{}\n"), 0o600); err != nil {
+	if err := os.WriteFile(configPath, []byte(`{"direct_outbound":{"interface":"en7"}}`+"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("HOME", t.TempDir())
@@ -255,6 +255,12 @@ func TestLoadDaemonConfigBindsManagedRootAndOwner(t *testing.T) {
 	profilePath, err := cfg.ProxyProfilePath()
 	if err != nil || profilePath != filepath.Join(dataDir, "proxy.json") {
 		t.Fatalf("profile path = %q, %v", profilePath, err)
+	}
+	if cfg.Corplink.DirectInterface != "en7" {
+		t.Fatalf("CorpLink direct interface = %q, want en7", cfg.Corplink.DirectInterface)
+	}
+	if got, want := strings.Join(cfg.Corplink.PublicDNS, ","), strings.Join(BootstrapDNSServers(), ","); got != want {
+		t.Fatalf("CorpLink bootstrap DNS = %q, want %q", got, want)
 	}
 }
 

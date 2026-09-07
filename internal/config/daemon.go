@@ -201,6 +201,11 @@ func LoadDaemonConfig(path string, authorizedUID, authorizedGID int, rootOnly bo
 	if err := loaded.ValidateDaemonPaths(); err != nil {
 		return nil, err
 	}
+	// These fields are intentionally excluded from JSON. Derive them on every
+	// privileged load so reloads cannot fall back to split-horizon system DNS.
+	loaded.Corplink.DirectInterface = loaded.DirectOutbound.Interface
+	loaded.Corplink.PublicDNS = BootstrapDNSServers()
+
 	loaded.SetDaemonOwner(owner)
 	return loaded, nil
 }

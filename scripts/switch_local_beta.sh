@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 
-VERSION="0.3.0-beta.11"
+VERSION="0.3.0-beta.12"
 DMG_NAME="CrossLink-v${VERSION}-darwin-arm64.dmg"
-DMG_SHA256="1f75252a031f07bd731ee4ec0872bf60587ff57bb08b353be3f74ec3783cb2c7"
+DMG_SHA256="c483d548d289b8806a4a0a36737081163d10b3808d1267a5ea7ee5ed8a688b73"
 REPOSITORY="limauriga-ux/crosslink"
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"

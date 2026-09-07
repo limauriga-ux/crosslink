@@ -367,7 +367,6 @@ func runWithContext(ctx context.Context) error {
 	}
 	defer daemon.RemovePidFile(paths.PIDFile) //nolint:errcheck
 
-	prepareCorplinkConfig(cfg)
 	configState := newDaemonConfigState(cfg, paths.ConfigPath)
 	corplinkMgr := corplink.NewManagerWithConfig(paths.Session, cfg.Corplink)
 	vpnMgr := vpnpkg.New(cfg)
@@ -438,14 +437,6 @@ func runWithContext(ctx context.Context) error {
 			log.Printf("[main] received %v; config reload is available only over IPC, ignoring", sig)
 		},
 	)
-}
-
-func prepareCorplinkConfig(cfg *config.Config) {
-	if cfg == nil {
-		return
-	}
-	cfg.Corplink.DirectInterface = cfg.DirectOutbound.Interface
-	cfg.Corplink.PublicDNS = config.BootstrapDNSServers()
 }
 
 type daemonConfigState struct {

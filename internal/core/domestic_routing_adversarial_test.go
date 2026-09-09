@@ -197,6 +197,53 @@ func TestDomesticRoutingAdversarialSystemProtectionWins(t *testing.T) {
 	}
 }
 
+func TestMixedInboundProfileRuleOverridesCorporateClaim(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	dir := filepath.Join(home, ".crosslink", "test")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	profilePath := filepath.Join(dir, "proxy.json")
+	if err := os.WriteFile(profilePath, []byte(`{
+		"outbounds":[
+			{"type":"socks","tag":"edge","server":"127.0.0.1","server_port":1},
+			{"type":"selector","tag":"Proxy","outbounds":["edge"],"default":"edge"}
+		],
+		"route":{
+			"rules":[{"domain_suffix":["githubusercontent.com"],"action":"route","outbound":"Proxy"}],
+			"final":"Proxy"
+		}
+	}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	port := listener.Addr().(*net.TCPAddr).Port
+	listener.Close()
+
+	cfg := adversarialCoreConfig(dir, profilePath, "")
+	cfg.Core.MixedPort = port
+	manager := startAdversarialCore(t, cfg)
+	manager.runtime.UpdateRoutes(nil, []string{"githubusercontent.com", "corp.example"}, nil, false)
+
+	explicit := domainMetadata("release-assets.githubusercontent.com")
+	explicit.Inbound = mixedInboundTag
+	decision := selectAdversarialRoute(manager.instance.Router(), explicit, "Proxy")
+	if decision.index != 2 || decision.actionType != C.RuleActionTypeRoute || decision.action != "route(Proxy)" {
+		t.Fatalf("explicit Mixed rule decision = %+v", decision)
+	}
+
+	unlisted := domainMetadata("git.corp.example")
+	unlisted.Inbound = mixedInboundTag
+	decision = selectAdversarialRoute(manager.instance.Router(), unlisted, "Proxy")
+	if decision.index != 3 || decision.actionType != C.RuleActionTypeRoute || decision.action != "route(corp)" {
+		t.Fatalf("Mixed corporate fallback decision = %+v", decision)
+	}
+}
+
 func TestDomesticRoutingDisabledLeavesNoRuleSetFallback(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)

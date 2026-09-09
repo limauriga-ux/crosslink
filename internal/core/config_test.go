@@ -43,7 +43,7 @@ func TestCompileConfigOwnsSystemLayers(t *testing.T) {
 	if len(options.Endpoints) != 1 || options.Endpoints[0].Tag != corpEndpointTag {
 		t.Fatalf("endpoints = %#v", options.Endpoints)
 	}
-	if len(options.Outbounds) != 3|| options.Outbounds[0].Tag != directTag || options.Outbounds[1].Tag != profile.OpenVPNTargetTag || options.Outbounds[1].Type != "block" || options.Outbounds[2].Tag != corpendpoint.PublicAuthOutboundTag {
+	if len(options.Outbounds) != 3 || options.Outbounds[0].Tag != directTag || options.Outbounds[1].Tag != profile.OpenVPNTargetTag || options.Outbounds[1].Type != "block" || options.Outbounds[2].Tag != corpendpoint.PublicAuthOutboundTag {
 		t.Fatalf("outbounds = %#v", options.Outbounds)
 	}
 	if options.DNS == nil || len(options.DNS.Servers) != 4 {
@@ -55,6 +55,60 @@ func TestCompileConfigOwnsSystemLayers(t *testing.T) {
 	}
 	if !tags[dnsTransportTag] || !tags[bootstrapDNSTag] || !tags[publicDNSTagPrefix+"1"] || !tags[publicDNSTagPrefix+"2"] {
 		t.Fatalf("DNS tags = %#v", tags)
+	}
+}
+
+func TestCompileConfigScopesCorporatePriorityByInbound(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	profilePath := filepath.Join(dir, "proxy.json")
+	if err := os.WriteFile(profilePath, []byte(`{
+		"outbounds":[
+			{"type":"direct","tag":"edge"},
+			{"type":"selector","tag":"Proxy","outbounds":["edge"],"default":"edge"}
+		],
+		"route":{
+			"rules":[{"domain":["github.com"],"action":"route","outbound":"Proxy"}],
+			"final":"Proxy"
+		}
+	}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := appconfig.DefaultConfig()
+	cfg.Core.Profile = profilePath
+	cfg.Core.Rules = ""
+	cfg.Core.DomesticDirect = false
+	compiled, err := compileConfig(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	root, err := singjson.UnmarshalExtended[map[string]any](compiled.content)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rules := root["route"].(map[string]any)["rules"].([]any)
+	if len(rules) != 6 {
+		t.Fatalf("compiled rules = %#v", rules)
+	}
+	for _, test := range []struct {
+		index   int
+		inbound string
+	}{
+		{index: 2, inbound: tunInboundTag},
+		{index: 4, inbound: mixedInboundTag},
+	} {
+		rule := rules[test.index].(map[string]any)
+		inbounds, _ := rule["inbound"].([]any)
+		preferredBy, _ := rule["preferred_by"].([]any)
+		if len(inbounds) != 1 || inbounds[0] != test.inbound || len(preferredBy) != 1 || preferredBy[0] != corpEndpointTag || rule["outbound"] != corpEndpointTag {
+			t.Fatalf("corporate rule %d = %#v, want inbound %q", test.index, rule, test.inbound)
+		}
+	}
+	profileRule := rules[3].(map[string]any)
+	domains, _ := profileRule["domain"].([]any)
+	if len(domains) != 1 || domains[0] != "github.com" || profileRule["outbound"] != "Proxy" {
+		t.Fatalf("profile rule = %#v", profileRule)
 	}
 }
 

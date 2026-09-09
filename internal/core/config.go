@@ -115,7 +115,17 @@ func compileConfigWithOpenVPN(cfg *appconfig.Config, openVPN *openVPNRuntimeConf
 	rules := []any{
 		map[string]any{"action": "sniff"},
 		map[string]any{"protocol": "dns", "action": "hijack-dns"},
-		map[string]any{"preferred_by": []string{corpEndpointTag}, "action": "route", "outbound": corpEndpointTag},
+	}
+	// Transparent system traffic must remain fail-closed for every claimed
+	// corporate destination, so the TUN protection rule stays ahead of all
+	// user/Profile rules. Mixed Port is an explicit policy entry point and gets
+	// its corporate fallback after those rules instead.
+	corporateProtectionRule := map[string]any{"preferred_by": []string{corpEndpointTag}, "action": "route", "outbound": corpEndpointTag}
+	if cfg.Core.TUNEnabled {
+		corporateProtectionRule["inbound"] = []string{tunInboundTag}
+	}
+	if cfg.Core.TUNEnabled || cfg.Core.MixedPort == 0 {
+		rules = append(rules, corporateProtectionRule)
 	}
 	rules = append(rules, prependRules...)
 	if openVPN != nil {
@@ -160,6 +170,17 @@ func compileConfigWithOpenVPN(cfg *appconfig.Config, openVPN *openVPNRuntimeConf
 	}
 	rules = append(rules, profileRules...)
 	rules = append(rules, appendRules...)
+	if cfg.Core.MixedPort > 0 {
+		// Explicit proxy rules must be able to select a public node even when
+		// CorpLink also claims the destination. Unmatched corporate traffic still
+		// fails closed through the same endpoint.
+		rules = append(rules, map[string]any{
+			"inbound":      []string{mixedInboundTag},
+			"preferred_by": []string{corpEndpointTag},
+			"action":       "route",
+			"outbound":     corpEndpointTag,
+		})
+	}
 	if cfg.Core.DomesticDirect {
 		rules = append(rules,
 			map[string]any{"rule_set": []string{domesticDomainRuleSetTag}, "action": "route", "outbound": directTag},
